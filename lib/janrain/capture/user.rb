@@ -4,10 +4,21 @@ module Janrain::Capture::User
   included do
     before_validation :default_permissions_and_flags_if_nil
     before_save :update_capture_with_changes
+    attr_accessor :failed
+
+    def failed
+      @failed
+    end
+
+    def failed=(value)
+      @failed = value
+    end
   end
 
   module ClassMethods
     include Janrain::Capture
+
+
     def authenticate(code, options={})
       # XXX: lets support password auth at some point
       oauth = Client::Oauth.token(code, options)
@@ -126,10 +137,10 @@ module Janrain::Capture::User
           end
         else
           if response['stat'] == 'ok'
-            self[:failed] = false
+            self.failed = false
             self[:capture_id] = self.capture_id
           else
-            self[:failed] = true
+            self.failed = true
           end
         end
         # return capture id
@@ -141,7 +152,7 @@ module Janrain::Capture::User
       if persisted? and persist
         update_attribute(:failed, true)
       else
-        self[:failed] = true
+        self.failed = true
       end
     end
   end
@@ -192,7 +203,8 @@ module Janrain::Capture::User
     self[:access_token] = oauth['access_token']
     self[:expires_at] = Time.now + oauth['expires_in'].seconds
   end
-
+  
+  
   private
 
   def update_capture_with_changes
